@@ -55,16 +55,22 @@ public class MorseDecoder {
         double[] sampleBuffer = new double[BIN_SIZE * inputFile.getNumChannels()];
         for (int binIndex = 0; binIndex < totalBinCount; binIndex++) {
             // Get the right number of samples from the inputFile
+            inputFile.readFrames(sampleBuffer, BIN_SIZE);
             // Sum all the samples together and store them in the returnBuffer
+            double s = 0;
+            for (int i = 0; i < sampleBuffer.length; i++) {
+                s += sampleBuffer[i];
+            }
+            returnBuffer[binIndex] = s;
         }
         return returnBuffer;
     }
 
     /** Power threshold for power or no power. You may need to modify this value. */
-    private static final double POWER_THRESHOLD = 10;
+    private static final double POWER_THRESHOLD = 1;
 
     /** Bin threshold for dots or dashes. Related to BIN_SIZE. You may need to modify this value. */
-    private static final int DASH_BIN_COUNT = 8;
+    private static final int DASH_BIN_COUNT = 2;
 
     /**
      * Convert power measurements to dots, dashes, and spaces.
@@ -83,12 +89,52 @@ public class MorseDecoder {
          * transitions. You will also have to store how much power or silence you have seen.
          */
 
+        String result = "";
+
         // if ispower and waspower
         // else if ispower and not waspower
         // else if issilence and wassilence
         // else if issilence and not wassilence
+        int i = 0;
+        int binCount = 0;
+        int silenceCount = 0;
 
-        return "";
+        while (i < powerMeasurements.length) {
+            while (powerMeasurements[i] > POWER_THRESHOLD) {
+                binCount++;
+                i++;
+                if (!(i < powerMeasurements.length)) {
+                    break;
+                }
+            }
+            if (binCount >= DASH_BIN_COUNT) {
+                while (binCount >= DASH_BIN_COUNT) {
+                    result += "-";
+                    binCount -= DASH_BIN_COUNT;
+                }
+                if (binCount > 0) {
+                    result += ".";
+                }
+            } else if (binCount > 0) {
+                result += ".";
+            }
+            binCount = 0;
+
+            while (powerMeasurements[i] <= POWER_THRESHOLD) {
+                silenceCount++;
+                i++;
+                if (!(i < powerMeasurements.length)) {
+                    break;
+                }
+            }
+            if (silenceCount > 0) {
+                result += " ";
+                silenceCount = 0;
+            }
+
+        }
+        System.out.println(result);
+        return result;
     }
 
     /**
